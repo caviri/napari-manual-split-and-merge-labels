@@ -33,7 +33,7 @@ def Manually_merge_labels(labels_layer: napari.layers.Labels, points_layer: napa
     points_layer.data = []
 
 @register_function(menu="Utilities > Manually split labels")
-def Manually_split_labels(image_layer: napari.layers.Image, labels_layer: napari.layers.Labels, points_layer: napari.layers.Points, invert_image: bool, viewer: napari.Viewer):
+def Manually_split_labels(image_layer: napari.layers.Image, labels_layer: napari.layers.Labels, points_layer: napari.layers.Points, invert_image: bool, minimum_intensity: int, remove_points: bool, viewer: napari.Viewer):
     if points_layer is None:
         points_layer = viewer.add_points([])
         points_layer.mode = 'ADD'
@@ -42,6 +42,7 @@ def Manually_split_labels(image_layer: napari.layers.Image, labels_layer: napari
     image = image_layer.data
     labels = labels_layer.data
     points = points_layer.data
+
 
     label_ids = [labels.item(tuple([int(j) for j in i])) for i in points]
 
@@ -63,6 +64,9 @@ def Manually_split_labels(image_layer: napari.layers.Image, labels_layer: napari
         #mask[tuple(points)] = True
         mask[tuple([int(j) for j in i])] = True
 
+    if minimum_intensity>0:
+        binary = binary & (image>=minimum_intensity)
+
     markers, _ = ndi.label(mask)
     if invert_image:
         new_labels = watershed(-image, markers, mask=binary)
@@ -71,6 +75,7 @@ def Manually_split_labels(image_layer: napari.layers.Image, labels_layer: napari
     labels[binary] = new_labels[binary] + labels.max()
 
     labels_layer.data = labels
-    points_layer.data = []
+    if remove_points:
+        points_layer.data = []
 
 
